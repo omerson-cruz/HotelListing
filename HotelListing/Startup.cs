@@ -1,5 +1,7 @@
 using HotelListing.Configurations;
 using HotelListing.Data;
+using HotelListing.IRepository;
+using HotelListing.Repository;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -41,6 +43,13 @@ namespace HotelListing
 
             services.AddAutoMapper(typeof(MapperInitializer));
 
+            // At AddTransient will only create an instance(fresh copy) when a new request comes from client 
+            // Other Options
+            //  AddSingleton
+            //  AddScope
+            
+            services.AddTransient<IUnitOfWork, UnitOfWork>();
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "HotelListing", Version = "v1" });
@@ -54,7 +63,9 @@ namespace HotelListing
             /*OMERSON - As a best practice we put the Adding of Controller Service at the last
              * of Configuring Services 
              */
-            services.AddControllers();
+            services.AddControllers().AddNewtonsoftJson(op => 
+                op.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+            );
 
         }
 
