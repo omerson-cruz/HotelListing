@@ -16,7 +16,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
+using Microsoft.EntityFrameworkCore.Design;
+using HotelListing.Services;
 
 namespace HotelListing
 {
@@ -32,6 +33,18 @@ namespace HotelListing
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+
+            /*Adding Database Context for connecting to the SQL Server*/
+            services.AddDbContext<DatabaseContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("sqlConnection"))
+            );
+
+            /* CUSTOM Services for authenticating users and securing API to the ServicesExtensions*/
+            services.AddAuthentication();
+            services.ConfigureIdentity();
+            services.ConfigureJWT(Configuration);
+
+
             /*OMERSON*/
             services.AddCors(o => {
                 o.AddPolicy("CORS Policy", builder =>
@@ -50,15 +63,15 @@ namespace HotelListing
             
             services.AddTransient<IUnitOfWork, UnitOfWork>();
 
+            // Adding the Auth Manager for the "AuthManager.cs"  after the JSON Web Token was defined
+            services.AddScoped<IAuthManager, AuthManager>();
+            
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "HotelListing", Version = "v1" });
             });
 
-            /*Adding Database Context for connecting to the SQL Server*/
-            services.AddDbContext<DatabaseContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString("sqlConnection"))
-            );
+
 
             /*OMERSON - As a best practice we put the Adding of Controller Service at the last
              * of Configuring Services 
@@ -66,6 +79,7 @@ namespace HotelListing
             services.AddControllers().AddNewtonsoftJson(op => 
                 op.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
             );
+
 
         }
 
@@ -85,10 +99,15 @@ namespace HotelListing
 
             /*app.UseCors("CORS Policy");*/
             app.UseCors("AllowAll");
-
             app.UseRouting();
 
+            // app.UseAuthentication SHOULD ALWAYS COME BEFORE THE app.UseAuthorization
+            app.UseAuthentication();
+
+            // after getting the JSON Web token we need to use the method below to allow the JSON Token acquired
+            // by the client to get access to secured ENDPOINT of API
             app.UseAuthorization();
+
 
             app.UseEndpoints(endpoints =>
             {
