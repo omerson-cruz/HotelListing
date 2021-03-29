@@ -18,6 +18,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Design;
 using HotelListing.Services;
+using AspNetCoreRateLimit;
 
 namespace HotelListing
 {
@@ -38,6 +39,16 @@ namespace HotelListing
             services.AddDbContext<DatabaseContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("sqlConnection"))
             );
+
+            // for rate limiting ann cache throttling 
+            services.AddMemoryCache();
+
+            // for rate limiting and cache throttlling 
+            services.ConfigureRateLimiting();
+            services.AddHttpContextAccessor();  // gives acces to actual controllers and inner workings 
+
+            //services.AddResponseCaching();  // ===> moving this inside of the ConfigureHttpCacheHeaders instead
+            services.ConfigureHttpCacheHeaders(); 
 
             /* CUSTOM Services for authenticating users and securing API to the ServicesExtensions*/
             services.AddAuthentication();
@@ -76,9 +87,19 @@ namespace HotelListing
             /*OMERSON - As a best practice we put the Adding of Controller Service at the last
              * of Configuring Services 
              */
-            services.AddControllers().AddNewtonsoftJson(op => 
+            services.AddControllers(config =>
+            {
+                config.CacheProfiles.Add("120SecondsDuration", new CacheProfile
+                {
+                    Duration = 120
+
+                });
+            })              
+            .AddNewtonsoftJson(op => 
                 op.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
             );
+
+            services.ConfigureVersioning();
 
 
         }
@@ -95,15 +116,28 @@ namespace HotelListing
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "HotelListing v1"));
 
+
+            // Now no need to have "Try catch block in each of the API" REST methods
+            app.ConfigureExceptionHandler();
+
             app.UseHttpsRedirection();
 
             /*app.UseCors("CORS Policy");*/
             app.UseCors("AllowAll");
+
+            /* Caching should be just above the app.UseRouting */
+            app.UseResponseCaching();
+            app.UseHttpCacheHeaders(); // For Cachin using the Marvin Caching Header library 
+
+            // put rate limiting and throttling just beneath the Caching service
+            app.UseIpRateLimiting();
+
             app.UseRouting();
+
+
 
             // app.UseAuthentication SHOULD ALWAYS COME BEFORE THE app.UseAuthorization
             app.UseAuthentication();
-
             // after getting the JSON Web token we need to use the method below to allow the JSON Token acquired
             // by the client to get access to secured ENDPOINT of API
             app.UseAuthorization();

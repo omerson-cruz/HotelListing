@@ -2,6 +2,7 @@
 using HotelListing.Data;
 using HotelListing.IRepository;
 using HotelListing.Models;
+using Marvin.Cache.Headers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -29,13 +30,17 @@ namespace HotelListing.Controllers
         }
 
         [HttpGet]
+        //[ResponseCache(Duration = 60)] // started implementation of caching data | Example of Caching the Data
+        /* using a more reusable cache profile */
+        //[ResponseCache(CacheProfileName="120SecondsDuration")] // no need for this because there is a global caching parameters in the ConfigureHttpCacheHeaders 
+
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetCountries()
+        public async Task<IActionResult> GetCountries([FromQuery] RequestParams requestParams)
         {
             try
             {
-                var countries = await _unitOfWork.Countries.GetAll();
+                var countries = await _unitOfWork.Countries.GetPagedList(requestParams);
                 var results = _imapper.Map<List<CountryDTO>>(countries);
                 return Ok(results);
             }
@@ -47,6 +52,13 @@ namespace HotelListing.Controllers
         }
 
         [HttpGet("{id:int}")]
+        /* using a more reusable cache profile */
+
+        // this will override the global Caching parameters set by using the ConfigureHttpCacheHeaders
+        [HttpCacheExpiration(CacheLocation = CacheLocation.Public, MaxAge = 60)]
+        [HttpCacheValidation(MustRevalidate = false)]
+
+
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetCountry(int id)

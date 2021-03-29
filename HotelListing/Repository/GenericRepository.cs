@@ -1,11 +1,13 @@
 ﻿using HotelListing.Data;
 using HotelListing.IRepository;
+using HotelListing.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using X.PagedList;
 
 namespace HotelListing.Repository
 {
@@ -82,6 +84,43 @@ namespace HotelListing.Repository
             return await query.AsNoTracking()  // becase we are just getting the data from database and sending to client then no need to track
                 .ToListAsync();
         }
+
+        // ALWAYS put nullable parameters at the beginning of the parameter list 
+        //public async Task<IPagedList<T>> GetAll(RequestParams requestParams = null, List<string> includes = null, )
+
+        public async Task<IPagedList<T>> GetPagedList(RequestParams requestParams, List<string> includes = null)
+
+        {
+            IQueryable<T> query = _db;
+
+            // this is for filtering the data
+            //if (expression != null)
+            //{
+            //    query = query.Where(expression);
+            //}
+
+            // this is for including the other connected entities to this Entity like the Country in Hotel
+            if (includes != null)
+            {
+                foreach (var includeProperty in includes)
+                {
+                    query = query.Include(includeProperty);
+                }
+            }
+
+
+            /// Order by is not included here 
+
+            //if (orderBy != null)
+            //{
+            //    query = orderBy(query);
+            //}
+
+            return await query.AsNoTracking()  // becase we are just getting the data from database and sending to client then no need to track
+                //.ToListAsync();
+                .ToPagedListAsync(requestParams.PageNumber, requestParams.PageSize);
+        }
+
 
         public async Task Insert(T entity)
         {
