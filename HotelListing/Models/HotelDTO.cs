@@ -19,7 +19,7 @@ namespace HotelListing.Models
         public double Rating { get; set; }
 
         // for referencing the related entity
-        [Required]
+        //[Required]  ===>> removing the "required" constraint here [2] COnstruct PUT Endpoint  @23:30
         public int CountryId { get; set; }
     }
 
@@ -27,6 +27,11 @@ namespace HotelListing.Models
     {
         public int Id { get; set; }
         public CountryDTO Country { get; set; }
+    }
+
+    public class UpdateHotelDTO : CreateHotelDTO
+    {
+
     }
 
     

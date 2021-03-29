@@ -26,7 +26,20 @@ namespace HotelListing.Models
     {
         public int Id { get; set; }
         // for HAS MANY relationship with Hotels
-        public virtual IList<HotelDTO> Hotels { get; set; }
+        public IList<HotelDTO> Hotels { get; set; }
+
+    }
+
+    public class UpdateCountryDTO : CreateCountryDTO
+    {
+        // [2] Construct PUT Endpoint - explanation as to why were putting  public virtual IList<HotelDTO> Hotels { get; set; } 
+        // in both CountryDTO and updateDTO instead of just inheriting from CreateCountryDTO
+
+
+        // this allows the Update for the country to also Add/edit/remove Associated Hotels in the Country 
+        public IList<CreateHotelDTO> Hotels { get; set; }
+
+        // [2] Construct PUT Endpoint - @20:18. changing from HotelDTO to "CreateHotelDTO"
 
     }
 }
