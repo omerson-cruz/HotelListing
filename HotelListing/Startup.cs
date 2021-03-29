@@ -114,7 +114,13 @@ namespace HotelListing
 
             /*OMERSON - from dev env taking out Swagger to the Production env*/
             app.UseSwagger();
-            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "HotelListing v1"));
+            //app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "HotelListing v1"));
+
+            // chaing the UseSwagger statement for local or cloud deployment
+            app.UseSwaggerUI(c => {
+                string swaggerJsonBasePath = string.IsNullOrWhiteSpace(c.RoutePrefix) ? "." : "..";
+                c.SwaggerEndpoint($"{swaggerJsonBasePath}/swagger/v1/swagger.json", "HotelListing Listing API");
+            }) ;
 
 
             // Now no need to have "Try catch block in each of the API" REST methods
